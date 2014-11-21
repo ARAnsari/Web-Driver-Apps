@@ -1,0 +1,290 @@
+<!DOCTYPE html>
+<html>
+  <head>
+  <meta name="viewport" content="initial-scale=1.0,  user-scalable=no">
+    <meta charset="utf-8">
+<script src='lib/shred.bundle.js' type='text/javascript'></script>
+<script src='lib/swagger.js' type='text/javascript'></script>
+<script src='lib/sdk-init.js' type='text/javascript'></script>
+<script src="jquery-1.11.1.min.js" type="text/javascript"></script>
+<script src="jquery-machine.js" type="text/javascript"></script>
+<script src="socket.io.min.js"></script>
+<script src='app.js' type='text/javascript'></script>
+<script src='geo.js' type='text/javascript'></script>
+
+   </head>
+  <body>
+<p><b id='boldStuff'>Please Login!</b> </p>
+<div><button id="logoutme" onclick="flogoutme()">Logout</button></div>
+<div id="login">  
+                    <input placeholder="Email Address" type="email" id="UserEmail" />
+                    <input placeholder="Password" type="password"  id="Password" value="" />
+                    <button onclick="logIn()">Sign In</button>
+  </div>
+  <div id="jobdisp"></div>
+<div id="networkconnectivity"></div>
+<div id="inithide">
+<div id="jobprompt"></div>
+<div id="jobprompt1"></div>
+<div id="socket-comm">
+<div class="userContainer">
+<div id="users"></div>
+</div>
+<div class="conversationContainer">
+<input type="text" id="data" />
+<input type="button" id="dataSend" value="send" />
+<div class="conversation" id="conversation"></div>
+</div>
+  </div>
+   <div id="actionpanel">
+   <label id="drvstate"></label>
+   
+  
+   <button id="ienroute" onclick="fenroute()">ENROUTE</button>
+   <button id="iorigin" onclick="forigin()">ORIGIN</button>
+   <button id="iPOB" onclick="fPOB()">POB</button>
+   <button id="iSTC" onclick="fSTC()">STC</button>
+   <button id="iclear" onclick="fclear()">CLEAR</button> <br><hr>
+
+   <button id="inoshow" onclick="fnoshow()">NOSHOW</button>
+   <button id="irunner" onclick="frunner()">RUNNER</button><br><hr>
+   
+   <button id="iactuallocation" onclick="factuallocation()">ACTUALLOCATION AT ORIGIN</button>
+   <button id="ijobchange" onclick="fjobchange()">JOBCHANGE AT STC</button><br><hr>
+   <button id="icustomerlocationrequest" onclick="fcustomerlocationrequest()">CUSTOMERLOCATIONREQUEST</button>
+   <button id="icustomernotify" onclick="fcustomernotify()">CUSTOMERNOTIFY</button><br><hr>
+   <button id="iofficeassistance" onclick="fofficeassistance()">OFFICEASSISTANCE</button>
+   <button id="iemergency" onclick="femergency()">EMERGENCY</button><hr>
+  
+   </div>
+   
+  <div id="jobreceived"></div>
+  
+  <div id="message2base"></div>
+  </div>
+  <script>
+  /////////////////////////////////////////////////////////////////////////
+
+  //la state de machine
+  //a) clear
+  //b) offered
+  //c) accepted    d)rejected 
+  // c1) enroute c2)origin c3)POB c4)STC c5)->a)
+  // 
+  //d1)-a), action=>bump down the queue
+  // ns)[c c1 c2 ]=>bump up the queue make fare=0 ,flag no show,out of dispatch
+  //cancelled [ c c1 c2]=>bump up the queue make fare=0 ,flag cancelled,out of dispatch
+  //runner [c4 c5]=>bump up the queue make fare=0 ,flag runner,out of dispatch
+  //revert [c c1 c2]=>>bump up the queue make fare=0 ,flag reverted, back to dispatch
+  $("#drvstate").machine({
+  defaultState: { /* clear */ 
+  
+  },
+  offered: {
+  
+  },
+  accepted: {
+  
+  },
+  rejected: { 
+  
+  },
+  enroute: { 
+  
+  },
+  origin: { 
+      },
+  POB: { 
+   
+  
+  },
+  STC: {  
+  
+  },
+  noshow: {
+   
+  
+  },
+  cancelled: {
+  
+  },
+  runner: { 
+  
+  },
+  revert: { 
+  
+  }
+    
+});
+setthestage();
+
+/////////////////////////////TEST INPUT FOR CHECKING STATE MACHINE
+//////////////////ONCE MANUALLY DONE THIS WILL BE DONE BY NODE JS AND SOCKET IO EVENTS, FROM CONTROLLER SIDE
+
+
+function fenroute(){
+$("#drvstate").data("state", "enroute");
+document.getElementById("drvstate").innerHTML="State::"+$("#drvstate").data("state");
+document.getElementById("ienroute").style.visibility='hidden';
+document.getElementById("iorigin").style.visibility='visible';
+document.getElementById("inoshow").style.visibility='hidden';
+audit("enroute",1); 
+
+}
+function forigin(){
+$("#drvstate").data("state", "origin");
+document.getElementById("drvstate").innerHTML="State::"+$("#drvstate").data("state");
+document.getElementById("iorigin").style.visibility='hidden';
+document.getElementById("iPOB").style.visibility='visible';
+document.getElementById("inoshow").style.visibility='visible';
+document.getElementById("iactuallocation").style.visibility='visible';
+document.getElementById("icustomerlocationrequest").style.visibility='visible';
+document.getElementById("icustomernotify").style.visibility='visible'; 
+audit("origin",1); 
+
+}
+function fPOB(){
+$("#drvstate").data("state", "POB");
+document.getElementById("drvstate").innerHTML="State::"+$("#drvstate").data("state");
+document.getElementById("iPOB").style.visibility='hidden';
+document.getElementById("iSTC").style.visibility='visible';
+document.getElementById("iactuallocation").style.visibility='hidden';
+document.getElementById("icustomerlocationrequest").style.visibility='hidden';
+document.getElementById("icustomernotify").style.visibility='hidden'; 
+document.getElementById("inoshow").style.visibility='hidden';
+audit("pob",1); 
+}
+function fSTC(){
+$("#drvstate").data("state", "STC");
+document.getElementById("drvstate").innerHTML="State::"+$("#drvstate").data("state");
+document.getElementById("iSTC").style.visibility='hidden';
+document.getElementById("iclear").style.visibility='visible';
+document.getElementById("irunner").style.visibility='visible';
+document.getElementById("iactuallocation").style.visibility='visible';
+document.getElementById("ijobchange").style.visibility='visible'; 
+audit("stc",1); 
+}
+
+function fclear(){
+ if(!Object.keys(lastknowgoodpos).length){alert("Please turn on your GPS Now");return;}
+$("#drvstate").data("state", "defaultState");
+document.getElementById("drvstate").innerHTML="State::"+$("#drvstate").data("state");
+document.getElementById("iclear").style.visibility='hidden';
+document.getElementById("irunner").style.visibility='hidden';
+document.getElementById('jobdisp').innerHTML="";//reset jobdisp area
+document.getElementById("iactuallocation").style.visibility='hidden';
+document.getElementById("ijobchange").style.visibility='hidden';
+audit("jobdone",1); 
+socket.emit("drvclear");
+}
+
+
+function fnoshow(){
+if(!Object.keys(lastknowgoodpos).length){alert("Please turn on your GPS Now");return;}
+if($("#drvstate").data("state")==="origin")
+  {
+  //bump up the queue
+  //patch the database
+  //clear the state
+  $("#drvstate").data("state", "defaultState");
+  document.getElementById("inoshow").style.visibility='hidden';
+  document.getElementById('jobdisp').innerHTML="";//reset jobdisp area
+  document.getElementById("drvstate").innerHTML="State::"+$("#drvstate").data("state");
+  document.getElementById("icustomerlocationrequest").style.visibility='hidden'; 
+  document.getElementById("icustomernotify").style.visibility='hidden'; 
+  document.getElementById("iPOB").style.visibility='hidden';
+  document.getElementById("iactuallocation").style.visibility='hidden'; 
+  audit("noshow",1); 
+ socket.emit("drvclear");
+  }
+}
+function fcancelled()
+{
+//will be sent out by the despatch
+
+
+//bump up the queue
+//clear the state
+$("#drvstate").data("state", "defaultState");
+//inform the driver
+alert("Job Cancelled");
+document.getElementById("ienroute").style.visibility='hidden';
+document.getElementById("iorigin").style.visibility='hidden';
+document.getElementById("iPOB").style.visibility='hidden';
+document.getElementById("iSTC").style.visibility='hidden';
+document.getElementById("iclear").style.visibility='hidden';
+document.getElementById('jobdisp').innerHTML="";//reset jobdisp area
+socket.emit("drvclear");
+
+}
+function frunner(){
+ if(!Object.keys(lastknowgoodpos).length){alert("Please turn on your GPS Now");return;}
+if($("#drvstate").data("state")==="STC")
+  {
+  //bump up the queue
+  //patch the database
+  //clear the state
+  $("#drvstate").data("state", "defaultState");
+  document.getElementById("iSTC").style.visibility='hidden';
+  document.getElementById('jobdisp').innerHTML="";//reset jobdisp area
+  document.getElementById("iactuallocation").style.visibility='hidden';
+  document.getElementById("ijobchange").style.visibility='hidden'; 
+  document.getElementById("irunner").style.visibility='hidden'; 
+  document.getElementById("iclear").style.visibility='hidden'; 
+  document.getElementById("drvstate").innerHTML="State::"+$("#drvstate").data("state");
+  audit("runner",1); 
+  socket.emit("drvclear");
+  }
+
+
+}
+
+function factuallocation(){
+var drvlegitstate=$("#drvstate").data("state");
+if(drvlegitstate==="origin"){
+audit("actuallocation",1);
+//the driver ,the state(origin) ,the job reference
+socket.emit("actualloc",{driverinfo:uniqueid,jobid:jobdbid,drvstate:drvlegitstate });
+}
+else
+{
+alert("Please use this for Origin only")
+}
+
+
+}
+function fjobchange(){
+var drvlegitstate=$("#drvstate").data("state");
+if(drvlegitstate==="STC"){
+
+//send message to controller that customer changed job
+  audit("jobchange",1); 
+  //the driver ,the state (destination),the job reference
+ socket.emit("jobchange",{driverinfo:uniqueid,jobid:jobdbid,drvstate:drvlegitstate });
+}
+else
+{
+alert("Please use this for STC only");
+}
+}
+
+function fcustomerlocationrequest(){audit("customerlocationrequest",1);}
+function fcustomernotify(){audit("customernotifyrequest",1);}
+function fofficeassistance(){socket.emit("officeassist",uniqueid);}
+function femergency(){socket.emit("emergency",uniqueid);}
+//la state de machine
+  //a) clear
+  //b) offered
+  //c) accepted    d)rejected 
+  // c1) enroute c2)origin c3)POB c4)STC c5)->a)
+  // 
+  //d1)-a), action=>bump down the queue
+  // ns)[c c1 c2 ]=>bump up the queue make fare=0 ,flag no show,out of dispatch
+  //cancelled [ c c1 c2]=>bump up the queue make fare=0 ,flag cancelled,out of dispatch
+  //runner [c4 c5]=>bump up the queue make fare=0 ,flag runner,out of dispatch
+  //revert [c c1 c2]=>>bump up the queue make fare=0 ,flag reverted, back to dispatch
+
+document.getElementById("drvstate").innerHTML="State::"+$("#drvstate").data("state");
+  </script>
+ </body>
+</html>

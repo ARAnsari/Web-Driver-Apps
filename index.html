@@ -1,0 +1,269 @@
+<!DOCTYPE HTML>
+<html>
+<head>
+<title>Station Cars</title>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
+<link href='http://fonts.googleapis.com/css?family=Open+Sans:400,300,700' rel='stylesheet' type='text/css'>
+<link href="css/style.css" rel="stylesheet" type="text/css" media="all" />
+<link rel="stylesheet" type="text/css" href="css/demo.css" />
+<link rel="stylesheet" type="text/css" href="css/component.css" />
+<script src='i.js' type='text/javascript'></script>
+<script src="socket.io.min.js"></script>
+<script src='shred.bundle.js' type='text/javascript'></script>
+<script src='swagger.js' type='text/javascript'></script>
+<script src='sdk-init.js' type='text/javascript'></script>
+
+</head>
+<body>
+<div class="wrap" style="height:100%; width:98%; margin: 0 auto;">
+<div class="btn_style bg" style="height:45px;  position:fixed; top:0; width:98%;">
+<div class="button" style="width: 37px; float: left;margin: -7px 0 0 3px; border:none;"><button id="logoutme" onclick="flogoutme()" class="bg2" ><img title="Logout" src="images/login.png"/></button></div>
+<h4 id='boldStuff' style="margin-right:23px;">Please Login!</h4>
+			</div>	
+            <!-- start grids_of_3 -->
+	<div class="grids_of_3">
+		<div class="grid1_of_3" style="margin-top:48px;">
+			<div class="grid_img">
+				<img id="bgimg" src="images/pic1.png" alt=""/>
+						<div class="list_top">
+						</div>
+			</div>
+			<div class="menu_box_list" style="margin-bottom: 50px; margin-top:0;"> 
+                        <p id="drvstate" style="text-align:center; margin:5px 0 5px 0;font-weight:bold;"></p>
+<!--            <p style="text-align:center; margin:5px;font-weight:bold;"><b id='boldStuff'>Please Login!</b></p>
+-->            <div class="solid" style="border-top:solid 1px; color:#CA7000; margin-bottom:10px;"></div>
+<div id="login">  
+                    <input style="margin:5px 0 -15px 5px; width:96% !important;" placeholder="Email Address" type="email" id="UserEmail" /><br>
+                    <input style="margin-left: 5px; margin-bottom:10px; width:96% !important;" placeholder="Password" type="password"  id="Password" value="" />
+<div class="button" style="width:50%;margin: -7px 0 0 24%; border:none;"><button id="login1" style=" height:40px;" onclick="logIn()" class="bg2" ><img style="width:20px; float:left; margin: -2px 0 0 6px;" title="Logout" src="images/login.png"/><p style="text-align: center;margin: 1px 20px 0 0;"><b>Login</b></p></button></div>
+  </div>
+    
+   <div id="actionpanel">
+   <div id="jobprompt1" style="text-align:center;margin-top: 22px;"></div>
+                   <div id="jobdisp" style="margin:20px 10px 20px 10px;clear: both;padding: 5px;line-height: 25px;"></div>
+<!-- /content -->
+    </div>
+<div id="networkconnectivity"></div>
+<div id="inithide">
+<div id="jobprompt"></div>
+<!--<div id="socket-comm">
+<div class="userContainer">
+<div id="users"></div>
+</div>
+<div class="conversationContainer">
+<input type="text" id="data" />
+<input type="button" id="dataSend" value="send" />
+<div class="conversation" id="conversation"></div>
+</div>
+  </div>-->
+<style>.button{width: 50px; float: left;margin: -29px 0 -7px 5px;} button{margin:10px 0 10px 0px;}</style>
+   
+  <div id="jobreceived"></div>
+  
+  <div id="message2base"></div>
+  </div>
+
+
+				<div class="clear"></div>
+			</div>
+		</div>
+		<div class="clear"></div>
+	<!--<div class="copy">
+		<p class="link">© All rights reserved</p>
+	</div>-->
+	</div>
+    <div class="soc_icons" style="height:auto !important; border-top: solid; position:fixed; bottom:0; width:98%;"><br>
+
+    <div id="drvbut" style="display:none;">
+   <div class="button"><button id="ienroute" onclick="fenroute()" class="bg2"><img title="Origin" src="images/enroute.png"/></button></div>
+   <div class="button"><button id="iorigin" onclick="forigin()" class="bg2" ><img title="Origin" src="images/origin.png"/></button></div>
+   <div class="button"><button id="iPOB" onclick="fPOB()" class="bg2" ><img title="Origin" src="images/pob.png"/></button></div>
+   <div class="button"><button id="iSTC" onclick="fSTC()" class="bg2" ><img title="Origin" src="images/stc.png"/></button></div>
+   <div class="button"><button id="iclear" onclick="fclear()" class="bg2" ><img title="Origin" src="images/clear.png"/></button></div>
+   <div class="button"><button id="inoshow" onclick="fnoshow()" class="bg2" ><img title="Origin" src="images/noshow.png"/></button></div>
+   <div class="button"><button id="irunner" onclick="frunner()" class="bg2" ><img title="Origin" src="images/runner.png"/></button></div>
+</div>
+</div>
+</div>
+  <script>
+ 
+setthestage();
+
+/////////////////////////////TEST INPUT FOR CHECKING STATE MACHINE
+//////////////////ONCE MANUALLY DONE THIS WILL BE DONE BY NODE JS AND SOCKET IO EVENTS, FROM CONTROLLER SIDE
+
+
+function fenroute(){
+setstate("enroute");
+document.getElementById("drvstate").innerHTML="State::"+getstate();
+document.getElementById("ienroute").style.display="none";
+document.getElementById("iorigin").style.display="block";
+document.getElementById("inoshow").style.display="none";
+audit("enroute",1); 
+
+}
+function forigin(){
+setstate("origin");
+document.getElementById("drvstate").innerHTML="State::"+getstate();
+document.getElementById("iorigin").style.display="none";
+document.getElementById("iPOB").style.display="block";
+document.getElementById("inoshow").style.display="block";
+//document.getElementById("iactuallocation").style.display="block";
+//document.getElementById("icustomerlocationrequest").style.display="block";
+//document.getElementById("icustomernotify").style.display="block"; 
+audit("origin",1); 
+
+}
+function fPOB(){
+setstate("POB");
+document.getElementById("drvstate").innerHTML="State::"+getstate();
+document.getElementById("iPOB").style.display="none";
+document.getElementById("iSTC").style.display="block";
+//document.getElementById("iactuallocation").style.display="none";
+//document.getElementById("icustomerlocationrequest").style.display="none";
+//document.getElementById("icustomernotify").style.display="none"; 
+document.getElementById("inoshow").style.display="none";
+audit("pob",1); 
+}
+function fSTC(){
+setstate("STC");
+document.getElementById("drvstate").innerHTML="State::"+getstate();
+document.getElementById("iSTC").style.display="none";
+document.getElementById("iclear").style.display="block";
+document.getElementById("irunner").style.display="block";
+//document.getElementById("iactuallocation").style.display="block";
+//document.getElementById("ijobchange").style.display="block"; 
+audit("stc",1); 
+}
+
+function fclear(){
+ if(!Object.keys(lastknowgoodpos).length){alert("Please turn on your GPS Now");return;}
+setstate("ready");
+document.getElementById("drvstate").innerHTML="State::"+getstate();
+document.getElementById("iclear").style.display="none";
+document.getElementById("irunner").style.display="none";
+document.getElementById('jobdisp').innerHTML="";//reset jobdisp area
+document.getElementById('jobdisp').style.display="none";
+//document.getElementById("iactuallocation").style.display="none";
+//document.getElementById("ijobchange").style.display="none";
+audit("jobdone",1);
+drvjobcom();
+socket.emit("drvclear");
+}
+
+
+function fnoshow(){
+if(!Object.keys(lastknowgoodpos).length){alert("Please turn on your GPS Now");return;}
+if(getstate()==="origin")
+  {
+  //bump up the queue
+  //patch the database
+  //clear the state
+  setstate("ready");
+  document.getElementById("inoshow").style.display="none";
+  document.getElementById('jobdisp').innerHTML="";//reset jobdisp area
+  document.getElementById("drvstate").innerHTML="State::"+getstate();
+ // document.getElementById("icustomerlocationrequest").style.display="none"; 
+  //document.getElementById("icustomernotify").style.display="none"; 
+  document.getElementById("iPOB").style.display="none";
+  //document.getElementById("iactuallocation").style.display="none"; 
+  audit("noshow",1); 
+ socket.emit("drvclear");
+  }
+}
+function fcancelled()
+{
+//will be sent out by the despatch
+
+
+//bump up the queue
+//clear the state
+setstate("ready");
+//inform the driver
+alert("Job Cancelled");
+document.getElementById("ienroute").style.display="none";
+document.getElementById("iorigin").style.display="none";
+document.getElementById("iPOB").style.display="none";
+document.getElementById("iSTC").style.display="none";
+document.getElementById("iclear").style.display="none";
+document.getElementById('jobdisp').innerHTML="";//reset jobdisp area
+socket.emit("drvclear");
+
+}
+function frunner(){
+ if(!Object.keys(lastknowgoodpos).length){alert("Please turn on your GPS Now");return;}
+if(getstate()==="STC")
+  {
+  //bump up the queue
+  //patch the database
+  //clear the state
+  setstate("ready");
+  document.getElementById("iSTC").style.display="none";
+  document.getElementById('jobdisp').innerHTML="";//reset jobdisp area
+  //document.getElementById("iactuallocation").style.display="none";
+ // document.getElementById("ijobchange").style.display="none"; 
+  document.getElementById("irunner").style.display="none"; 
+  document.getElementById("iclear").style.display="none"; 
+  document.getElementById("drvstate").innerHTML="State::"+getstate();
+  audit("runner",1); 
+  socket.emit("drvclear");
+  }
+
+
+}
+
+function factuallocation(){
+var drvlegitstate=getstate();
+if(drvlegitstate==="origin"){
+audit("actuallocation",1);
+//the driver ,the state(origin) ,the job reference
+socket.emit("actualloc",{driverinfo:uniqueid,jobid:jobdbid,drvstate:drvlegitstate });
+}
+else
+{
+alert("Please use this for Origin only")
+}
+
+
+}
+function fjobchange(){
+var drvlegitstate=getstate();
+if(drvlegitstate==="STC"){
+
+//send message to controller that customer changed job
+  audit("jobchange",1); 
+  //the driver ,the state (destination),the job reference
+ socket.emit("jobchange",{driverinfo:uniqueid,jobid:jobdbid,drvstate:drvlegitstate });
+}
+else
+{
+alert("Please use this for STC only");
+}
+}
+
+function fcustomerlocationrequest(){audit("customerlocationrequest",1);}
+function fcustomernotify(){audit("customernotifyrequest",1);}
+function fofficeassistance(){socket.emit("officeassist",uniqueid);}
+function femergency(){socket.emit("emergency",uniqueid);}
+//la state de machine
+  //a) clear
+  //b) offered
+  //c) accepted    d)rejected 
+  // c1) enroute c2)origin c3)POB c4)STC c5)->a)
+  // 
+  //d1)-a), action=>bump down the queue
+  // ns)[c c1 c2 ]=>bump up the queue make fare=0 ,flag no show,out of dispatch
+  //cancelled [ c c1 c2]=>bump up the queue make fare=0 ,flag cancelled,out of dispatch
+  //runner [c4 c5]=>bump up the queue make fare=0 ,flag runner,out of dispatch
+  //revert [c c1 c2]=>>bump up the queue make fare=0 ,flag reverted, back to dispatch
+
+document.getElementById("drvstate").innerHTML="State::"+getstate();
+  </script>
+
+<script src="js/cbpFWTabs.js"></script>
+		<script>
+			new CBPFWTabs( document.getElementById( 'tabs' ) );
+		</script>
+</body>
+</html>
